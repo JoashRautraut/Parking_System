@@ -1,115 +1,217 @@
 <?php
 session_start();
+require 'includes/db.php';
+
+// Validate admin session
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: index.php");
     exit();
 }
 
-require 'includes/db.php';
-
-// Handle new vehicle registration
-if (isset($_POST['register_vehicle'])) {
-    $firstName = trim($_POST['first_name']);
-    $lastName = trim($_POST['last_name']);
-    $plate = trim($_POST['plate_number']);
-    $email = trim($_POST['owner_email']);
-    $vehicleType = trim($_POST['vehicle_type']);
-
-    $stmt = $conn->prepare("INSERT INTO vehicles (first_name, last_name, plate_number, owner_email, vehicle_type) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssss", $firstName, $lastName, $plate, $email, $vehicleType);
-    $stmt->execute();
-    $stmt->close();
+// Fetch Students with Search/Filter safely
+$searchQuery = "";
+if (!empty($_GET['search'])) {
+    $search = $conn->real_escape_string(trim($_GET['search']));
+    $searchQuery = " AND (first_name LIKE '%$search%' OR last_name LIKE '%$search%' OR email LIKE '%$search%')";
 }
 
-// Fetch vehicle data
-$vehicles = $conn->query("SELECT * FROM vehicles");
-
-// Fetch data for charts
-$vehicleTypeData = $conn->query("SELECT vehicle_type, COUNT(*) as count FROM vehicles GROUP BY vehicle_type");
-$typeData = [];
-while ($row = $vehicleTypeData->fetch_assoc()) {
-    $typeData[] = [$row['vehicle_type'], (int)$row['count']];
-}
+$students = $conn->query("SELECT * FROM users WHERE role = 'student' $searchQuery");
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-        google.charts.load('current', {'packages':['corechart']});
-        google.charts.setOnLoadCallback(drawCharts);
-
-        function drawCharts() {
-            var typeData = google.visualization.arrayToDataTable([
-                ['Vehicle Type', 'Count'],
-                <?php foreach ($typeData as $data) { echo "['{$data[0]}', {$data[1]}],"; } ?>
-            ]);
-
-            var typeOptions = {
-                title: 'Registered Vehicles by Type',
-                pieHole: 0.4,
-                is3D: true
-            };
-
-            var typeChart = new google.visualization.PieChart(document.getElementById('typeChart'));
-            typeChart.draw(typeData, typeOptions);
+    <title>Admin - Manage Students</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* General Styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f4;
         }
-    </script>
+        .sidebar {
+            width: 250px;
+            background: #343a40;
+            color: white;
+            position: fixed;
+            height: 100%;
+            padding-top: 20px;
+        }
+        .sidebar h2 {
+            text-align: center;
+        }
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 10px;
+            text-decoration: none;
+            text-align: center;
+        }
+        .sidebar a:hover {
+            background: #007bff;
+        }
+        .main-content {
+            margin-left: 260px;
+            padding: 20px;
+        }
+        h2 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            width: 250px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        button {
+            padding: 8px 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        table {
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #007bff;
+            color: white;
+        }
+        tr:hover {
+            background: #f1f1f1;
+        }
+        .actions a {
+            margin-right: 10px;
+            text-decoration: none;
+            color: #007bff;
+        }
+        .actions a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <h2>Admin Dashboard</h2>
 
-    <div style="display: flex; gap: 20px;">
-        <div style="flex: 1;">
-            <h3>Register a Vehicle</h3>
-            <form action="admin.php" method="POST">
-                <label>First Name:</label><br>
-                <input type="text" name="first_name" required><br><br>
-                <label>Last Name:</label><br>
-                <input type="text" name="last_name" required><br><br>
-                <label>Plate Number:</label><br>
-                <input type="text" name="plate_number" required><br><br>
-                <label>Owner Email:</label><br>
-                <input type="email" name="owner_email" required><br><br>
-                <label>Vehicle Type:</label><br>
-                <select name="vehicle_type" required>
-                    <option value="Car">Car</option>
-                    <option value="Motorcycle">Motorcycle</option>
-                </select><br><br>
-                <button type="submit" name="register_vehicle">Register Vehicle</button>
-            </form>
-        </div>
+<div class="sidebar">
+    <h2>Admin Panel</h2>
+    <nav>
+        <ul>
+            <li><a href="#" onclick="loadPage('dashboard.php')"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a href="#" onclick="loadPage('students.php')"><i class="fas fa-users"></i> Student Records</a></li>
+            <li><a href="#" onclick="loadPage('settings.php')"><i class="fas fa-cog"></i> Settings</a></li>
+            <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+    </nav>
+</div>
 
-        <div style="flex: 1;">
-            <h3>Registered Vehicles by Type</h3>
-            <div id="typeChart" style="width: 100%; height: 300px;"></div>
-        </div>
-    </div>
+<div class="main-content" id="content">
+    <h2>Welcome to the Admin Panel</h2>
+    <p>Select a section from the sidebar.</p>
+</div>
 
-    <h3>All Registered Vehicles</h3>
-    <table border="1" cellpadding="10">
-        <tr>
-            <th>ID</th>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Plate Number</th>
-            <th>Owner Email</th>
-            <th>Vehicle Type</th>
-        </tr>
-        <?php while ($row = $vehicles->fetch_assoc()): ?>
+<script src="script.js"></script>
+
+<div class="main-content">
+    <h2>Dashboard</h2>
+    <div id="vehicleChart" style="width: 100%; height: 400px;"></div>
+    <div id="typeChart" style="width: 100%; height: 400px;"></div>
+
+    <h2>Manage Students</h2>
+    <form method="GET" action="admin.php">
+        <input type="text" name="search" placeholder="Search by name or email" value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
+        <button type="submit">Search</button>
+    </form>
+
+    <h3>Student List</h3>
+    <table>
+        <thead>
             <tr>
-                <td><?= $row['id'] ?></td>
-                <td><?= htmlspecialchars($row['first_name']) ?></td>
-                <td><?= htmlspecialchars($row['last_name']) ?></td>
-                <td><?= htmlspecialchars($row['plate_number']) ?></td>
-                <td><?= htmlspecialchars($row['owner_email']) ?></td>
-                <td><?= htmlspecialchars($row['vehicle_type']) ?></td>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Actions</th>
             </tr>
-        <?php endwhile; ?>
+        </thead>
+        <tbody>
+            <?php while ($student = $students->fetch_assoc()): ?>
+                <tr>
+                    <td><?= $student['id'] ?></td>
+                    <td><?= htmlspecialchars($student['first_name']) ?></td>
+                    <td><?= htmlspecialchars($student['last_name']) ?></td>
+                    <td><?= htmlspecialchars($student['email']) ?></td>
+                    <td class="actions">
+                        <a href="admin.php?edit=<?= $student['id'] ?>">Edit</a> |
+                        <a href="admin.php?delete=<?= $student['id'] ?>" onclick="return confirm('Are you sure you want to delete this student?');">Delete</a>
+                    </td>
+                </tr>
+            <?php endwhile; ?>
+        </tbody>
     </table>
+</div>
+
+<script src="https://www.gstatic.com/charts/loader.js"></script>
+<script>
+    google.charts.load('current', {packages: ['corechart']});
+    google.charts.setOnLoadCallback(drawCharts);
+
+    function drawCharts() {
+        drawVehicleChart();
+        drawTypeChart();
+    }
+
+    function drawVehicleChart() {
+        var data = google.visualization.arrayToDataTable([
+            ['Status', 'Count'],
+            ['Inside Campus', 10],
+            ['Outside Campus', 5]
+        ]);
+
+        var options = {
+            title: 'Vehicle Parking Status',
+            pieHole: 0.4,
+            colors: ['#007bff', '#dc3545']
+        };
+
+        var chart = new google.visualization.PieChart(document.getElementById('vehicleChart'));
+        chart.draw(data, options);
+    }
+
+    function drawTypeChart() {
+        var data = google.visualization.arrayToDataTable([
+            ['Type', 'Count', { role: 'style' }],
+            ['Car', 7, '#007bff'],
+            ['Motorcycle', 8, '#dc3545']
+        ]);
+
+        var options = {
+            title: 'Vehicle Types',
+            bar: { groupWidth: '75%' },
+            legend: { position: 'none' }
+        };
+
+        var chart = new google.visualization.BarChart(document.getElementById('typeChart'));
+        chart.draw(data, options);
+    }
+</script>
+
 </body>
 </html>

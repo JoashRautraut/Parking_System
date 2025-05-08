@@ -8,36 +8,17 @@ body, html {
     display: flex;
 }
 
-.sidebar {
-    width: 250px;
-    background-color: #333;
-    color: #fff;
-    padding: 20px;
-    min-height: 100vh;
-}
 
-.sidebar h2 {
-    text-align: center;
-    margin-bottom: 20px;
-}
 
-.sidebar ul {
-    list-style-type: none;
-    padding: 0;
-}
 
-.sidebar ul li {
-    margin-bottom: 10px;
-}
 
-.sidebar ul li a {
-    text-decoration: none;
-    color: #fff;
-    display: block;
-    padding: 10px;
-    background-color: #444;
-    border-radius: 5px;
-}
+
+
+
+
+
+
+
 
 .sidebar ul li a:hover {
     background-color: #555;
@@ -69,4 +50,88 @@ body, html {
     background-color: #f9f9f9;
     border-radius: 10px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+.main-content {
+    margin-left: 210px;
+    padding: 20px;
+}
+/* Sidebar Styling */
+.sidebar {
+    width: 250px;
+    background: #343a40;
+    color: white;
+    position: fixed;
+    height: 100%;
+    padding-top: 20px;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.sidebar h2 {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 20px;
+}
+
+.sidebar nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar nav ul li {
+    padding: 15px 20px;
+    text-align: left;
+    transition: background 0.3s ease-in-out;
+}
+
+.sidebar nav ul li a {
+    text-decoration: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+}
+
+.sidebar nav ul li a:hover {
+    background: #007bff;
+    border-radius: 5px;
+}
+
+/* Icons */
+.sidebar nav ul li a i {
+    font-size: 20px;
+}
+
+/* Sidebar Hover Effect */
+.sidebar:hover {
+    width: 280px;
+}
+
+/* Main Content Adjustments */
+.main-content {
+    margin-left: 270px;
+    padding: 20px;
+}
+.sidebar nav ul li a {
+    text-decoration: none;
+    color: white;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    transition: background 0.3s ease-in-out;
+}
+.sidebar nav ul li a:hover {
+    background: #007bff;
+    border-radius: 5px;
+}
+.main-content {
+    padding: 20px;
+    transition: opacity 0.3s ease-in-out;
 }
