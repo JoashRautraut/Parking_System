@@ -140,16 +140,7 @@ $students = $conn->query("SELECT * FROM users WHERE role = 'student' $searchQuer
         <button type="submit">Search</button>
     </form>
 
-    <h3>Student List</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Actions</th>
-            </tr>
+    
         </thead>
         <tbody>
             <?php while ($student = $students->fetch_assoc()): ?>
