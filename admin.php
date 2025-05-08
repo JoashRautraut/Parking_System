@@ -7,55 +7,28 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 require 'includes/db.php';
 
-// Handle new registration
+// Handle new vehicle registration
 if (isset($_POST['register_vehicle'])) {
+    $firstName = trim($_POST['first_name']);
+    $lastName = trim($_POST['last_name']);
     $plate = trim($_POST['plate_number']);
     $email = trim($_POST['owner_email']);
+    $vehicleType = trim($_POST['vehicle_type']);
 
-    $stmt = $conn->prepare("INSERT INTO vehicles (plate_number, owner_email) VALUES (?, ?)");
-    $stmt->bind_param("ss", $plate, $email);
+    $stmt = $conn->prepare("INSERT INTO vehicles (first_name, last_name, plate_number, owner_email, vehicle_type) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssss", $firstName, $lastName, $plate, $email, $vehicleType);
     $stmt->execute();
     $stmt->close();
 }
 
-// Handle deletion
-if (isset($_GET['delete'])) {
-    $id = intval($_GET['delete']);
-    $stmt = $conn->prepare("DELETE FROM vehicles WHERE id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $stmt->close();
-    header("Location: admin.php");
-    exit();
-}
-
-// Handle edit
-if (isset($_POST['update_vehicle'])) {
-    $id = intval($_POST['vehicle_id']);
-    $plate = trim($_POST['plate_number']);
-    $email = trim($_POST['owner_email']);
-
-    $stmt = $conn->prepare("UPDATE vehicles SET plate_number = ?, owner_email = ? WHERE id = ?");
-    $stmt->bind_param("ssi", $plate, $email, $id);
-    $stmt->execute();
-    $stmt->close();
-    header("Location: admin.php");
-    exit();
-}
-
-// Fetch vehicles
+// Fetch vehicle data
 $vehicles = $conn->query("SELECT * FROM vehicles");
 
-$editMode = false;
-$editVehicle = null;
-if (isset($_GET['edit'])) {
-    $editMode = true;
-    $id = intval($_GET['edit']);
-    $stmt = $conn->prepare("SELECT * FROM vehicles WHERE id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $editVehicle = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
+// Fetch data for charts
+$vehicleTypeData = $conn->query("SELECT vehicle_type, COUNT(*) as count FROM vehicles GROUP BY vehicle_type");
+$typeData = [];
+while ($row = $vehicleTypeData->fetch_assoc()) {
+    $typeData[] = [$row['vehicle_type'], (int)$row['count']];
 }
 ?>
 
@@ -63,45 +36,78 @@ if (isset($_GET['edit'])) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard - Vehicle Registration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(drawCharts);
+
+        function drawCharts() {
+            var typeData = google.visualization.arrayToDataTable([
+                ['Vehicle Type', 'Count'],
+                <?php foreach ($typeData as $data) { echo "['{$data[0]}', {$data[1]}],"; } ?>
+            ]);
+
+            var typeOptions = {
+                title: 'Registered Vehicles by Type',
+                pieHole: 0.4,
+                is3D: true
+            };
+
+            var typeChart = new google.visualization.PieChart(document.getElementById('typeChart'));
+            typeChart.draw(typeData, typeOptions);
+        }
+    </script>
 </head>
 <body>
-    <h2>Welcome, Admin!</h2>
+    <h2>Admin Dashboard</h2>
 
-    <h3><?= $editMode ? 'Edit Vehicle' : 'Register a Vehicle' ?></h3>
-    <form action="admin.php" method="POST">
-        <?php if ($editMode): ?>
-            <input type="hidden" name="vehicle_id" value="<?= $editVehicle['id'] ?>">
-        <?php endif; ?>
+    <div style="display: flex; gap: 20px;">
+        <div style="flex: 1;">
+            <h3>Register a Vehicle</h3>
+            <form action="admin.php" method="POST">
+                <label>First Name:</label><br>
+                <input type="text" name="first_name" required><br><br>
+                <label>Last Name:</label><br>
+                <input type="text" name="last_name" required><br><br>
+                <label>Plate Number:</label><br>
+                <input type="text" name="plate_number" required><br><br>
+                <label>Owner Email:</label><br>
+                <input type="email" name="owner_email" required><br><br>
+                <label>Vehicle Type:</label><br>
+                <select name="vehicle_type" required>
+                    <option value="Car">Car</option>
+                    <option value="Motorcycle">Motorcycle</option>
+                </select><br><br>
+                <button type="submit" name="register_vehicle">Register Vehicle</button>
+            </form>
+        </div>
 
-        <label>Plate Number:</label><br>
-        <input type="text" name="plate_number" required value="<?= $editMode ? $editVehicle['plate_number'] : '' ?>"><br><br>
+        <div style="flex: 1;">
+            <h3>Registered Vehicles by Type</h3>
+            <div id="typeChart" style="width: 100%; height: 300px;"></div>
+        </div>
+    </div>
 
-        <label>Owner Email:</label><br>
-        <input type="email" name="owner_email" required value="<?= $editMode ? $editVehicle['owner_email'] : '' ?>"><br><br>
-
-        <button type="submit" name="<?= $editMode ? 'update_vehicle' : 'register_vehicle' ?>">
-            <?= $editMode ? 'Update Vehicle' : 'Register Vehicle' ?>
-        </button>
-    </form>
-
-    <h3>Registered Vehicles</h3>
+    <h3>All Registered Vehicles</h3>
     <table border="1" cellpadding="10">
         <tr>
             <th>ID</th>
+            <th>First Name</th>
+            <th>Last Name</th>
             <th>Plate Number</th>
             <th>Owner Email</th>
-            <th>Actions</th>
+            <th>Vehicle Type</th>
         </tr>
         <?php while ($row = $vehicles->fetch_assoc()): ?>
             <tr>
                 <td><?= $row['id'] ?></td>
+                <td><?= htmlspecialchars($row['first_name']) ?></td>
+                <td><?= htmlspecialchars($row['last_name']) ?></td>
                 <td><?= htmlspecialchars($row['plate_number']) ?></td>
                 <td><?= htmlspecialchars($row['owner_email']) ?></td>
-                <td>
-                    <a href="admin.php?edit=<?= $row['id'] ?>">Edit</a> |
-                    <a href="admin.php?delete=<?= $row['id'] ?>" onclick="return confirm('Are you sure you want to delete this vehicle?');">Delete</a>
-                </td>
+                <td><?= htmlspecialchars($row['vehicle_type']) ?></td>
             </tr>
         <?php endwhile; ?>
     </table>

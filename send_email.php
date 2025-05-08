@@ -26,7 +26,7 @@ function sendViolationEmail($to, $plateNumber, $remarks) {
         $mail->isHTML(true);
         $mail->Subject = 'Parking Violation Warning';
         $mail->Body    = "
-            <h3>Parking Violation Notice</h3>
+            <h3>⚠️Parking Violation Notice⚠️</h3>
             <p>Plate Number: <strong>$plateNumber</strong></p>
             <p>Remarks: $remarks</p>
             <p>This is a warning issued by the Parking Management System.</p>
