@@ -59,7 +59,12 @@ if (isset($_POST['register_vehicle'])) {
 
     <form action="student_register.php" method="POST">
         
+    <label>First Name:</label><br>
+        <input type="text" name="first_name" required><br><br>
 
+        <label>Last Name:</label><br>
+        <input type="text" name="last_name" required><br><br>
+        
         <label>Plate Number:</label><br>
         <input type="text" name="plate_number" required><br><br>
 

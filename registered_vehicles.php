@@ -2,16 +2,15 @@
 session_start();
 require 'includes/db.php';
 
-// Validate admin session
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: index.php");
     exit();
 }
 
-// Handle Delete Student
+// Handle Delete Vehicle
 if (isset($_GET['delete'])) {
     $deleteId = intval($_GET['delete']);
-    $stmt = $conn->prepare("DELETE FROM users WHERE id = ? AND role = 'student'");
+    $stmt = $conn->prepare("DELETE FROM vehicles WHERE id = ?");
     $stmt->bind_param("i", $deleteId);
     $stmt->execute();
     $stmt->close();
@@ -19,27 +18,16 @@ if (isset($_GET['delete'])) {
     exit();
 }
 
-// Handle Edit Student
-$editStudent = null;
-if (isset($_GET['edit'])) {
-    $editId = intval($_GET['edit']);
-    $stmt = $conn->prepare("SELECT * FROM users WHERE id = ? AND role = 'student'");
-    $stmt->bind_param("i", $editId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $editStudent = $result->fetch_assoc();
-    $stmt->close();
-}
+// Handle Update Vehicle
+if (isset($_POST['update_vehicle'])) {
+    $id = intval($_POST['vehicle_id']);
+    $first_name = trim($_POST['first_name']);
+    $last_name = trim($_POST['last_name']);
+    $plate_number = trim($_POST['plate_number']);
+    $vehicle_type = trim($_POST['vehicle_type']);
 
-// Handle Update Student
-if (isset($_POST['update_student'])) {
-    $id = intval($_POST['student_id']);
-    $firstName = trim($_POST['first_name']);
-    $lastName = trim($_POST['last_name']);
-    $email = trim($_POST['email']);
-
-    $stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, email = ? WHERE id = ? AND role = 'student'");
-    $stmt->bind_param("sssi", $firstName, $lastName, $email, $id);
+    $stmt = $conn->prepare("UPDATE vehicles SET first_name = ?, last_name = ?, plate_number = ?, vehicle_type = ? WHERE id = ?");
+    $stmt->bind_param("ssssi", $first_name, $last_name, $plate_number, $vehicle_type, $id);
     $stmt->execute();
     $stmt->close();
 
@@ -47,14 +35,8 @@ if (isset($_POST['update_student'])) {
     exit();
 }
 
-// Fetch Registered Vehicles
-$searchQuery = "";
-if (!empty($_GET['search'])) {
-    $search = $conn->real_escape_string(trim($_GET['search']));
-    $searchQuery = " AND (first_name LIKE '%$search%' OR last_name LIKE '%$search%' OR email LIKE '%$search%')";
-}
-
-$students = $conn->query("SELECT * FROM users WHERE role = 'student' $searchQuery");
+// Fetch Vehicles
+$vehicles = $conn->query("SELECT * FROM vehicles");
 ?>
 
 <!DOCTYPE html>
@@ -65,7 +47,6 @@ $students = $conn->query("SELECT * FROM users WHERE role = 'student' $searchQuer
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
 <div class="sidebar">
     <h2>Admin Panel</h2>
     <nav>
@@ -77,54 +58,66 @@ $students = $conn->query("SELECT * FROM users WHERE role = 'student' $searchQuer
         </ul>
     </nav>
 </div>
+<div class="container">
+    <?php include 'sidebar.php'; ?>
+    <div class="main-content">
+        <h2>Registered Vehicles</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Plate Number</th>
+                    <th>Vehicle Type</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while ($vehicle = $vehicles->fetch_assoc()): ?>
+                    <tr>
+                        <td><?= $vehicle['id'] ?></td>
+                        <td><?= htmlspecialchars($vehicle['first_name']) ?></td>
+                        <td><?= htmlspecialchars($vehicle['last_name']) ?></td>
+                        <td><?= htmlspecialchars($vehicle['plate_number']) ?></td>
+                        <td><?= htmlspecialchars($vehicle['vehicle_type']) ?></td>
+                        <td>
+                            <a href="registered_vehicles.php?edit=<?= $vehicle['id'] ?>">Edit</a> |
+                            <a href="registered_vehicles.php?delete=<?= $vehicle['id'] ?>" onclick="return confirm('Are you sure you want to delete this vehicle?');">Delete</a>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
 
-<div class="main-content">
-    <h2>Registered Vehicles</h2>
-    <form method="GET" action="registered_vehicles.php">
-        <input type="text" name="search" placeholder="Search by name or email" value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
-        <button type="submit">Search</button>
-    </form>
-
-    <h3>Student List</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        <?php while ($student = $students->fetch_assoc()): ?>
-            <tr>
-                <td><?= $student['id'] ?></td>
-                <td><?= htmlspecialchars($student['first_name']) ?></td>
-                <td><?= htmlspecialchars($student['last_name']) ?></td>
-                <td><?= htmlspecialchars($student['email']) ?></td>
-                <td>
-                    <a href="registered_vehicles.php?edit=<?= $student['id'] ?>">Edit</a> |
-                    <a href="registered_vehicles.php?delete=<?= $student['id'] ?>" onclick="return confirm('Are you sure you want to delete this student?');">Delete</a>
-                </td>
-            </tr>
-        <?php endwhile; ?>
-        </tbody>
-    </table>
+        <?php if (isset($_GET['edit'])): ?>
+            <?php
+            $editId = intval($_GET['edit']);
+            $stmt = $conn->prepare("SELECT * FROM vehicles WHERE id = ?");
+            $stmt->bind_param("i", $editId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $vehicle = $result->fetch_assoc();
+            $stmt->close();
+            ?>
+            <h2>Edit Vehicle</h2>
+            <form method="POST">
+                <input type="hidden" name="vehicle_id" value="<?= $vehicle['id'] ?>">
+                <label>First Name:</label>
+                <input type="text" name="first_name" value="<?= htmlspecialchars($vehicle['first_name']) ?>" required><br><br>
+                <label>Last Name:</label>
+                <input type="text" name="last_name" value="<?= htmlspecialchars($vehicle['last_name']) ?>" required><br><br>
+                <label>Plate Number:</label>
+                <input type="text" name="plate_number" value="<?= htmlspecialchars($vehicle['plate_number']) ?>" required><br><br>
+                <label>Vehicle Type:</label>
+                <select name="vehicle_type" required>
+                    <option value="car" <?= $vehicle['vehicle_type'] === 'car' ? 'selected' : '' ?>>Car</option>
+                    <option value="motorcycle" <?= $vehicle['vehicle_type'] === 'motorcycle' ? 'selected' : '' ?>>Motorcycle</option>
+                </select><br><br>
+                <button type="submit" name="update_vehicle">Update Vehicle</button>
+            </form>
+        <?php endif; ?>
+    </div>
 </div>
-
-<?php if ($editStudent): ?>
-<div class="main-content">
-    <h3>Edit Student</h3>
-    <form method="POST" action="registered_vehicles.php">
-        <input type="hidden" name="student_id" value="<?= $editStudent['id'] ?>">
-        <input type="text" name="first_name" value="<?= htmlspecialchars($editStudent['first_name']) ?>" required>
-        <input type="text" name="last_name" value="<?= htmlspecialchars($editStudent['last_name']) ?>" required>
-        <input type="email" name="email" value="<?= htmlspecialchars($editStudent['email']) ?>" required>
-        <button type="submit" name="update_student">Update</button>
-    </form>
-</div>
-<?php endif; ?>
-
 </body>
 </html>
