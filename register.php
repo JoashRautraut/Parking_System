@@ -17,7 +17,7 @@
         <label>Role:</label><br>
         <select name="role" required>
             <option value="student">Student</option>
-            <option value="faculty">Faculty</option>
+            <option value="security_guard">Security guard</option>
             <option value="admin">Admin</option>
         </select><br><br>
 

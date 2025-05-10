@@ -12,7 +12,7 @@ session_start();
    //         header('Location: admin.php');
     //        break;
     //    case 'faculty':A
-    //        header('Location: faculty.php');
+    //        header('Location: security_guard.php');
      //       break;
     //    case 'student':
      //       header('Location: student.php');
@@ -231,8 +231,8 @@ if (isset($_GET['session']) && $_GET['session'] === 'expired') {
                     case 'admin':
                         window.location.href = 'admin.php';
                         break;
-                    case 'faculty':
-                        window.location.href = 'faculty.php';
+                    case 'security_guard':
+                        window.location.href = 'security_guard.php';
                         break;
                     case 'student':
                         window.location.href = 'student.php';

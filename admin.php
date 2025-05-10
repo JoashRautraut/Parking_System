@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'includes/db.php';
+if ($role === 'admin' || $role === 'security_guard') 
 
 // Validate admin session
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {

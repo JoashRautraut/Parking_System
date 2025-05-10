@@ -20,12 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_violation'])) 
     if ($stmt->execute()) {
         // Send email notification
         if (sendViolationEmail($email, $plate, $remarks)) {
-            echo "<script>alert('Violation logged and email sent successfully.'); window.location.href='faculty.php';</script>";
+            echo "<script>alert('Violation logged and email sent successfully.'); window.location.href='security_guard.php';</script>";
         } else {
-            echo "<script>alert('Violation logged but failed to send email.'); window.location.href='faculty.php';</script>";
+            echo "<script>alert('Violation logged but failed to send email.'); window.location.href='security_guard.php';</script>";
         }
     } else {
-        echo "<script>alert('Error logging violation.'); window.location.href='faculty.php';</script>";
+        echo "<script>alert('Error logging violation.'); window.location.href='security_guard.php';</script>";
     }
 
     $stmt->close();
