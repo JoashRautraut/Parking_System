@@ -53,7 +53,9 @@ $vehicles = $stmt->get_result();
     <meta charset="UTF-8">
     <title>Student Panel - Register Vehicle</title>
 </head>
+
 <body>
+    
     <h2>Register a Vehicle</h2>
     <?= $message ?>
 
