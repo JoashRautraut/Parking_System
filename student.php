@@ -32,7 +32,8 @@ if (isset($_POST['register_vehicle'])) {
         $stmt->bind_param("isssss", $user_id, $first_name, $last_name, $email, $plate_number, $vehicle_type);
 
         if ($stmt->execute()) {
-            $message = "<p style='color: green;'>Vehicle registered successfully.</p>";
+            header("Location: congratulations.php");
+            exit();
         } else {
             $message = "<p style='color: red;'>Error: " . htmlspecialchars($stmt->error) . "</p>";
         }
@@ -52,55 +53,117 @@ $vehicles = $stmt->get_result();
 <head>
     <meta charset="UTF-8">
     <title>Student Panel - Register Vehicle</title>
-</head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
 
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px #ccc;
+        }
+
+        .logout-btn {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            float: right;
+        }
+
+        .logout-btn:hover {
+            background-color: #0056b3;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        .form-section, .table-section {
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: #fff;
+        }
+    </style>
+</head>
 <body>
-    
+
+<div class="container">
+    <form action="logout.php" method="POST" style="float: right;">
+        <button type="submit" class="logout-btn">Logout</button>
+    </form>
+
     <h2>Register a Vehicle</h2>
     <?= $message ?>
 
-    <form action="student.php" method="POST">
-        <label>First Name:</label><br>
-        <input type="text" name="first_name" required><br><br>
+    <div class="form-section">
+        <form action="student.php" method="POST">
+            <label>First Name:</label><br>
+            <input type="text" name="first_name" required><br><br>
 
-        <label>Last Name:</label><br>
-        <input type="text" name="last_name" required><br><br>
+            <label>Last Name:</label><br>
+            <input type="text" name="last_name" required><br><br>
 
-        <label>Email:</label><br>
-        <input type="email" name="owner_email" required><br><br>
+            <label>Email:</label><br>
+            <input type="email" name="owner_email" required><br><br>
 
-        <label>Plate Number:</label><br>
-        <input type="text" name="plate_number" required><br><br>
+            <label>Plate Number:</label><br>
+            <input type="text" name="plate_number" required><br><br>
 
-        <label>Vehicle Type:</label><br>
-        <select name="vehicle_type" required>
-            <option value="Car">Car</option>
-            <option value="Motorcycle">Motorcycle</option>
-        </select><br><br>
+            <label>Vehicle Type:</label><br>
+            <select name="vehicle_type" required>
+                <option value="Car">Car</option>
+                <option value="Motorcycle">Motorcycle</option>
+            </select><br><br>
 
-        <button type="submit" name="register_vehicle">Register Vehicle</button>
-    </form>
+            <button type="submit" name="register_vehicle">Register Vehicle</button>
+        </form>
+    </div>
 
     <h2>Your Registered Vehicles</h2>
-    <table border="1" cellpadding="10">
-        <tr>
-            <th>ID</th>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Email</th>
-            <th>Plate Number</th>
-            <th>Vehicle Type</th>
-        </tr>
-        <?php while ($row = $vehicles->fetch_assoc()): ?>
+    <div class="table-section">
+        <table>
             <tr>
-                <td><?= $row['id'] ?></td>
-                <td><?= htmlspecialchars($row['first_name']) ?></td>
-                <td><?= htmlspecialchars($row['last_name']) ?></td>
-                <td><?= htmlspecialchars($row['owner_email']) ?></td>
-                <td><?= htmlspecialchars($row['plate_number']) ?></td>
-                <td><?= htmlspecialchars($row['vehicle_type']) ?></td>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Plate Number</th>
+                <th>Vehicle Type</th>
             </tr>
-        <?php endwhile; ?>
-    </table>
+            <?php while ($row = $vehicles->fetch_assoc()): ?>
+                <tr>
+                    <td><?= $row['id'] ?></td>
+                    <td><?= htmlspecialchars($row['first_name']) ?></td>
+                    <td><?= htmlspecialchars($row['last_name']) ?></td>
+                    <td><?= htmlspecialchars($row['owner_email']) ?></td>
+                    <td><?= htmlspecialchars($row['plate_number']) ?></td>
+                    <td><?= htmlspecialchars($row['vehicle_type']) ?></td>
+                </tr>
+            <?php endwhile; ?>
+        </table>
+    </div>
+</div>
+
 </body>
 </html>
