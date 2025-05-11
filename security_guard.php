@@ -6,7 +6,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'security_guard') {
 }
 
 require 'includes/db.php';
-
+require 'send_email.php';
 ?>
 
 <!DOCTYPE html>
@@ -66,7 +66,7 @@ require 'includes/db.php';
 
         .log-btn {
             padding: 5px 10px;
-            background-color: #007bff;
+            background-color:rgb(224, 16, 16);
             color: #fff;
             border: none;
             border-radius: 5px;
@@ -74,7 +74,7 @@ require 'includes/db.php';
         }
 
         .log-btn:hover {
-            background-color: #0056b3;
+            background-color:rgb(223, 1, 1);
         }
 
         .form-popup {
@@ -108,41 +108,69 @@ require 'includes/db.php';
             background: rgba(0, 0, 0, 0.5);
             z-index: 999;
         }
+        .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.logout-btn {
+    padding: 10px 15px;
+    background-color: #dc3545;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.logout-btn:hover {
+    background-color: #c82333;
+}
+
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Welcome, Security Guard</h2>
+    <div class="header">
+        <h2>Welcome, Security Guard</h2>
+        <a href="logout.php" class="logout-btn">Logout</a>
+    </div>
 
     <!-- Search Bar -->
     <div class="search-bar">
         <input type="text" id="searchInput" placeholder="Search by Plate Number..." onkeyup="filterTable()">
     </div>
 
+
     <table id="vehicleTable">
-        <thead>
-            <tr>
-                <th>Plate Number</th>
-                <th>Owner Email</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            $vehicles = $conn->query("SELECT * FROM vehicles");
-            while ($row = $vehicles->fetch_assoc()) {
-                echo "<tr>
-                    <td>{$row['plate_number']}</td>
-                    <td>{$row['owner_email']}</td>
-                    <td>
-                        <button class='log-btn' onclick=\"openForm('{$row['plate_number']}', '{$row['owner_email']}')\">Log Violation</button>
-                    </td>
-                </tr>";
-            }
-            ?>
-        </tbody>
-    </table>
+    <thead>
+        <tr>
+            <th>Plate Number</th>
+            <th>Vehicle Type</th>
+            <th>Owner Email</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php
+        $vehicles = $conn->query("SELECT * FROM vehicles");
+        while ($row = $vehicles->fetch_assoc()) {
+            echo "<tr>
+                <td>{$row['plate_number']}</td>
+                <td>{$row['vehicle_type']}</td>
+                
+                <td>{$row['owner_email']}</td>
+                <td>
+                    <button class='log-btn' onclick=\"openForm('{$row['plate_number']}', '{$row['vehicle_type']}',  '{$row['owner_email']}')\">Log Violation</button>
+                </td>
+            </tr>";
+        }
+        ?>
+    </tbody>
+</table>
+
 </div>
 
 <!-- Violation Form -->
@@ -150,6 +178,7 @@ require 'includes/db.php';
 <div class="form-popup" id="violationForm">
     <form action="log_violation.php" method="POST">
         <input type="hidden" name="plate_number" id="form_plate_number">
+        <input type="hidden" name="vehicle_type" id="form_vehicle_type">
         <input type="hidden" name="owner_email" id="form_owner_email">
 
         <label for="remarks">Violation Remarks:</label>
@@ -160,13 +189,17 @@ require 'includes/db.php';
     </form>
 </div>
 
+
 <script>
-    function openForm(plate, email) {
-        document.getElementById('form_plate_number').value = plate;
-        document.getElementById('form_owner_email').value = email;
-        document.getElementById('overlay').style.display = 'block';
-        document.getElementById('violationForm').style.display = 'block';
-    }
+    function openForm(plate, vehicleType,  email) {
+    document.getElementById('form_plate_number').value = plate;
+    document.getElementById('form_vehicle_type').value = vehicleType;
+    document.getElementById('form_owner_email').value = email;
+    document.getElementById('overlay').style.display = 'block';
+    document.getElementById('violationForm').style.display = 'block';
+}
+
+    
 
     function closeForm() {
         document.getElementById('violationForm').style.display = 'none';
