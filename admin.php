@@ -2,15 +2,31 @@
 session_start();
 require 'includes/db.php';
 
-
 // Validate admin session
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: index.php");
     exit();
 }
 
-// Dashboard Page - admin.php
+// Fetch data for vehicle parking status
+$statusData = [];
+$statusQuery = "SELECT COUNT(id) as count, status FROM vehicles GROUP BY status";
+$result = $conn->query($statusQuery);
+
+while ($row = $result->fetch_assoc()) {
+    $statusData[] = [$row['status'], (int)$row['count']];
+}
+
+// Fetch data for vehicle types
+$typeData = [];
+$typeQuery = "SELECT COUNT(id) as count, vehicle_type FROM vehicles GROUP BY vehicle_type";
+$result = $conn->query($typeQuery);
+
+while ($row = $result->fetch_assoc()) {
+    $typeData[] = [$row['vehicle_type'], (int)$row['count']];
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,17 +59,19 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     google.charts.load('current', {packages: ['corechart']});
     google.charts.setOnLoadCallback(drawCharts);
 
+    const vehicleData = <?= json_encode($statusData) ?>;
+    const typeData = <?= json_encode($typeData) ?>;
+
     function drawCharts() {
         drawVehicleChart();
         drawTypeChart();
     }
 
     function drawVehicleChart() {
-        var data = google.visualization.arrayToDataTable([
-            ['Status', 'Count'],
-            ['Inside Campus', 10],
-            ['Outside Campus', 5]
-        ]);
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Status');
+        data.addColumn('number', 'Count');
+        data.addRows(vehicleData);
 
         var options = {
             title: 'Vehicle Parking Status',
@@ -66,16 +84,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     }
 
     function drawTypeChart() {
-        var data = google.visualization.arrayToDataTable([
-            ['Type', 'Count', { role: 'style' }],
-            ['Car', 7, '#007bff'],
-            ['Motorcycle', 8, '#dc3545']
-        ]);
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Type');
+        data.addColumn('number', 'Count');
+        data.addRows(typeData);
 
         var options = {
             title: 'Vehicle Types',
             bar: { groupWidth: '75%' },
-            legend: { position: 'none' }
+            legend: { position: 'none' },
+            colors: ['#007bff', '#dc3545']
         };
 
         var chart = new google.visualization.BarChart(document.getElementById('typeChart'));
