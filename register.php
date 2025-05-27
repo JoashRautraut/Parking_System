@@ -2,7 +2,11 @@
 session_start();
 require 'includes/db.php';
 
-
+// If user is already logged in, redirect them
+if (isset($_SESSION['user_id'])) {
+    header('Location: index.php');
+    exit();
+}
 
 // Check if the email is already registered
 $message = "";
@@ -96,6 +100,57 @@ if (isset($_POST['check_email'])) {
         .container .login-link a:hover {
             text-decoration: underline;
         }
+
+        .message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background-color: rgba(40, 167, 69, 0.9);
+            color: white;
+        }
+
+        .message.error {
+            background-color: rgba(220, 53, 69, 0.9);
+            color: white;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -103,16 +158,25 @@ if (isset($_POST['check_email'])) {
 <div class="container">
     <h2>Register</h2>
 
-    <?= $message ?>
+    <div id="message" class="message"></div>
 
-    
-
-    <form action="includes/register_handler.php" method="POST">
+    <form id="registerForm" onsubmit="handleRegister(event)">
         <label>Email:</label>
-        <input type="email" name="email" required>
+        <input type="email" 
+               name="email" 
+               required 
+               pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+               title="Please enter a valid email address">
 
-        <label>Password:</label>
-        <input type="password" name="password" required>
+        <div class="password-container">
+            <label>Password:</label>
+            <input type="password" 
+                   name="password" 
+                   required 
+                   minlength="8"
+                   title="Password must be at least 8 characters long">
+            <span class="toggle-password" onclick="togglePassword()">👁️</span>
+        </div>
 
         <label>Role:</label>
         <select name="role" required>
@@ -121,13 +185,80 @@ if (isset($_POST['check_email'])) {
             <option value="admin">Admin</option>
         </select>
 
-        <button type="submit">Register</button>
+        <button type="submit">
+            <span>Register</span>
+            <div class="spinner" id="registerSpinner"></div>
+        </button>
     </form>
 
     <div class="login-link">
-        Already have an account? <a href="index.php">Login here</a>.
+        Already have an account? <a href="index.php">Login here</a>
     </div>
 </div>
+
+<script>
+function togglePassword() {
+    const passwordInput = document.querySelector('input[name="password"]');
+    const toggleButton = document.querySelector('.toggle-password');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleButton.textContent = '👁️‍🗨️';
+    } else {
+        passwordInput.type = 'password';
+        toggleButton.textContent = '👁️';
+    }
+}
+
+async function handleRegister(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const buttonText = submitButton.querySelector('span');
+    const spinner = document.getElementById('registerSpinner');
+    const messageDiv = document.getElementById('message');
+    
+    try {
+        // Disable form submission
+        submitButton.disabled = true;
+        buttonText.style.display = 'none';
+        spinner.style.display = 'block';
+        
+        // Send form data
+        const response = await fetch('includes/register_handler.php', {
+            method: 'POST',
+            body: new FormData(form)
+        });
+        
+        const data = await response.json();
+        
+        // Display message
+        messageDiv.textContent = data.message;
+        messageDiv.className = 'message ' + (data.success ? 'success' : 'error');
+        messageDiv.style.display = 'block';
+        
+        // If registration was successful, clear the form
+        if (data.success) {
+            form.reset();
+            // Redirect to login page after 3 seconds
+            setTimeout(() => {
+                window.location.href = 'index.php';
+            }, 3000);
+        }
+        
+    } catch (error) {
+        messageDiv.textContent = 'An error occurred. Please try again.';
+        messageDiv.className = 'message error';
+        messageDiv.style.display = 'block';
+    } finally {
+        // Re-enable form submission
+        submitButton.disabled = false;
+        buttonText.style.display = 'block';
+        spinner.style.display = 'none';
+    }
+}
+</script>
 
 </body>
 </html>

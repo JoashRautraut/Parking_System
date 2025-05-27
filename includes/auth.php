@@ -28,7 +28,7 @@ try {
     }
 
     // Prepare the SQL statement
-    $stmt = $conn->prepare("SELECT id, password, role, active FROM users WHERE email = ? LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, password, role, active, email_verified FROM users WHERE email = ? LIMIT 1");
     if (!$stmt) {
         throw new Exception('Database error');
     }
@@ -48,6 +48,14 @@ try {
     // Verify if account is active
     if ($user['active'] != 1) {
         throw new Exception('Account is inactive. Please contact administrator.');
+    }
+
+    // Check if email is verified
+    if ($user['email_verified'] != 1) {
+        // Create new verification token and send email
+        $verifier = new EmailVerification($conn);
+        $verifier->resendVerificationEmail($user['id'], $email);
+        throw new Exception('Please verify your email address. A new verification link has been sent to your email.');
     }
 
     // Verify password
