@@ -2,6 +2,7 @@
 // Start session with default secure settings
 session_start();
 require_once 'includes/db.php';
+require_once 'includes/config.php';
 
 // If already logged in, redirect to appropriate page
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
@@ -78,6 +79,7 @@ if (isset($_GET['session']) && $_GET['session'] === 'expired') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> Login</title>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         * {
             margin: 0;
@@ -248,6 +250,16 @@ if (isset($_GET['session']) && $_GET['session'] === 'expired') {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .g-recaptcha {
+            margin-bottom: 15px;
+        }
+
+        .recaptcha-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -273,7 +285,7 @@ if (isset($_GET['session']) && $_GET['session'] === 'expired') {
                        required 
                        placeholder="Email"
                        autocomplete="email"
-                       pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                       pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
                        title="Please enter a valid email address">
             </div>
             <div class="form-group password-container">
@@ -287,6 +299,11 @@ if (isset($_GET['session']) && $_GET['session'] === 'expired') {
                 <span class="toggle-password" onclick="togglePassword()">👁️</span>
             </div>
             <div id="login-attempts-message" class="login-attempts-message"></div>
+
+            <div class="recaptcha-container">
+                <div class="g-recaptcha" data-sitekey="<?php echo RECAPTCHA_SITE_KEY; ?>"></div>
+            </div>
+
             <button type="submit">
                 <span>Login</span>
                 <div class="spinner" id="loginSpinner"></div>
@@ -355,11 +372,22 @@ if (isset($_GET['session']) && $_GET['session'] === 'expired') {
         const spinner = document.getElementById('loginSpinner');
         const buttonText = submitButton.querySelector('span');
 
+        // Check if reCAPTCHA is completed
+        const recaptchaResponse = grecaptcha.getResponse();
+        if (!recaptchaResponse) {
+            errorMessage.textContent = 'Please complete the reCAPTCHA verification.';
+            errorMessage.style.display = 'block';
+            return;
+        }
+
         try {
             errorMessage.style.display = 'none';
             submitButton.disabled = true;
             buttonText.style.display = 'none';
             spinner.style.display = 'block';
+
+            // Add reCAPTCHA response to form data
+            formData.append('g-recaptcha-response', recaptchaResponse);
 
             const response = await fetch('includes/auth.php', {
                 method: 'POST',
@@ -407,6 +435,7 @@ if (isset($_GET['session']) && $_GET['session'] === 'expired') {
             
             errorMessage.textContent = error.message || 'An error occurred during login';
             errorMessage.style.display = 'block';
+            grecaptcha.reset();
         } finally {
             submitButton.disabled = false;
             spinner.style.display = 'none';

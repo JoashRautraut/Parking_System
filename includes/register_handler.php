@@ -1,6 +1,7 @@
 <?php
 require_once 'db.php'; // Make sure this connects to your database
 require_once 'EmailVerification.php';
+require_once 'config.php';
 
 // Set error handling
 error_reporting(E_ALL);
@@ -15,6 +16,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
+    // Verify reCAPTCHA first
+    $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
+    if (empty($recaptchaResponse)) {
+        throw new Exception('Please complete the reCAPTCHA verification.');
+    }
+
+    // Verify reCAPTCHA with Google
+    $recaptchaVerify = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret=' . RECAPTCHA_SECRET_KEY . '&response=' . $recaptchaResponse);
+    $recaptchaData = json_decode($recaptchaVerify);
+
+    if (!$recaptchaData->success) {
+        throw new Exception('reCAPTCHA verification failed. Please try again.');
+    }
+
     $email = filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
     $password = trim($_POST['password'] ?? '');
     $role = trim($_POST['role'] ?? '');

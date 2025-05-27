@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'includes/db.php';
+require_once 'includes/config.php';
 
 // If user is already logged in, redirect them
 if (isset($_SESSION['user_id'])) {
@@ -27,6 +28,7 @@ if (isset($_POST['check_email'])) {
 <head>
     <meta charset="UTF-8">
     <title>Register</title>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         body {
             margin: 0;
@@ -151,6 +153,16 @@ if (isset($_POST['check_email'])) {
             cursor: pointer;
             color: #666;
         }
+
+        .g-recaptcha {
+            margin-bottom: 15px;
+        }
+
+        .recaptcha-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -184,6 +196,10 @@ if (isset($_POST['check_email'])) {
             <option value="security_guard">Security Guard</option>
             <option value="admin">Admin</option>
         </select>
+
+        <div class="recaptcha-container">
+            <div class="g-recaptcha" data-sitekey="<?php echo RECAPTCHA_SITE_KEY; ?>"></div>
+        </div>
 
         <button type="submit">
             <span>Register</span>
@@ -219,16 +235,29 @@ async function handleRegister(e) {
     const spinner = document.getElementById('registerSpinner');
     const messageDiv = document.getElementById('message');
     
+    // Check if reCAPTCHA is completed
+    const recaptchaResponse = grecaptcha.getResponse();
+    if (!recaptchaResponse) {
+        messageDiv.textContent = 'Please complete the reCAPTCHA verification.';
+        messageDiv.className = 'message error';
+        messageDiv.style.display = 'block';
+        return;
+    }
+    
     try {
         // Disable form submission
         submitButton.disabled = true;
         buttonText.style.display = 'none';
         spinner.style.display = 'block';
         
+        // Create FormData and append reCAPTCHA response
+        const formData = new FormData(form);
+        formData.append('g-recaptcha-response', recaptchaResponse);
+        
         // Send form data
         const response = await fetch('includes/register_handler.php', {
             method: 'POST',
-            body: new FormData(form)
+            body: formData
         });
         
         const data = await response.json();
@@ -237,6 +266,9 @@ async function handleRegister(e) {
         messageDiv.textContent = data.message;
         messageDiv.className = 'message ' + (data.success ? 'success' : 'error');
         messageDiv.style.display = 'block';
+        
+        // Reset reCAPTCHA
+        grecaptcha.reset();
         
         // If registration was successful, clear the form
         if (data.success) {
@@ -251,6 +283,7 @@ async function handleRegister(e) {
         messageDiv.textContent = 'An error occurred. Please try again.';
         messageDiv.className = 'message error';
         messageDiv.style.display = 'block';
+        grecaptcha.reset();
     } finally {
         // Re-enable form submission
         submitButton.disabled = false;

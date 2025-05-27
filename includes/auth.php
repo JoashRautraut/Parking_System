@@ -6,6 +6,7 @@ ob_start();
 
 header('Content-Type: application/json');
 require_once 'db.php';
+require_once 'config.php';
 
 // Initialize response array
 $response = ['success' => false, 'error' => null];
@@ -14,6 +15,20 @@ try {
     // Validate request method
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         throw new Exception('Invalid request method');
+    }
+
+    // Verify reCAPTCHA first
+    $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
+    if (empty($recaptchaResponse)) {
+        throw new Exception('Please complete the reCAPTCHA verification.');
+    }
+
+    // Verify reCAPTCHA with Google
+    $recaptchaVerify = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret=' . RECAPTCHA_SECRET_KEY . '&response=' . $recaptchaResponse);
+    $recaptchaData = json_decode($recaptchaVerify);
+
+    if (!$recaptchaData->success) {
+        throw new Exception('reCAPTCHA verification failed. Please try again.');
     }
 
     // Validate required fields
