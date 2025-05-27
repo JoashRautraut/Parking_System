@@ -120,8 +120,8 @@ class EmailVerification {
         if ($result->num_rows === 1) {
             $row = $result->fetch_assoc();
             
-            // Update user as verified
-            $updateStmt = $this->conn->prepare("UPDATE users SET email_verified = 1 WHERE id = ?");
+            // Update user as verified and set verification timestamp
+            $updateStmt = $this->conn->prepare("UPDATE users SET email_verified = 1, verified_at = NOW() WHERE id = ?");
             $updateStmt->bind_param("i", $row['user_id']);
             
             if ($updateStmt->execute()) {

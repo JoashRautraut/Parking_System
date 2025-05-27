@@ -1,0 +1,2 @@
+ALTER TABLE `users`
+ADD COLUMN `registered_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP; 
